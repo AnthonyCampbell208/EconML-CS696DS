@@ -306,8 +306,7 @@ class SearchEstimatorList(BaseEstimator):
             if is_data_scaled(X):
                 warnings.warn("Data may already be scaled. Scaling twice may negatively affect results.", UserWarning)
             self.scaler = StandardScaler()
-            self.scaler.fit(X)
-            scaled_X = self.scaler.transform(X)
+            scaled_X = self.scaler.fit_transform(X)
 
         for estimator, param_grid in zip(self.complete_estimator_list, self.param_grid_list):
             try:
