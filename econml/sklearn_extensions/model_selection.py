@@ -314,7 +314,7 @@ class SearchEstimatorList(BaseEstimator):
                     # pdb.set_trace()
                     if has_random_state(model=estimator):
                         if is_polynomial_pipeline(estimator):
-                            estimator = estimator.set_params(linear__random_state=42)
+                            estimator = estimator.set_params(linear__random_state=self.random_state)
                         else:
                             estimator.set_params(random_state=42)
                 print(estimator)
