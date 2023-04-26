@@ -326,10 +326,11 @@ class SearchEstimatorList(BaseEstimator):
         self._search_list = []
         
         if self.scaling:
-            if not is_data_scaled(X):
-                self.scaler = StandardScaler()
-                self.scaler.fit(X)
-                scaled_X = self.scaler.transform(X)
+            # pdb.set_trace()
+            if is_data_scaled(X):
+                warnings.warn("Data may already be scaled. Scaling twice may negatively affect results.", UserWarning)
+            self.scaler = StandardScaler()
+            scaled_X = self.scaler.fit_transform(X)
 
         for estimator, param_grid in zip(self.complete_estimator_list, self.param_grid_list):
             try:
@@ -337,7 +338,7 @@ class SearchEstimatorList(BaseEstimator):
                     if has_random_state(model=estimator):
                         # For a polynomial pipeline, you have to set the random state of the linear part, the polynomial part doesn't have random state
                         if is_polynomial_pipeline(estimator):
-                            estimator = estimator.set_params(linear__random_state=42)
+                            estimator = estimator.set_params(linear__random_state=self.random_state)
                         else:
                             estimator.set_params(random_state=42)
                 print(estimator)
