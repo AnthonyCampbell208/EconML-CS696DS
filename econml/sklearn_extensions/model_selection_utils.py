@@ -12,23 +12,19 @@ from sklearn.base import BaseEstimator, is_regressor
 from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor,
                               RandomForestClassifier, RandomForestRegressor)
-from sklearn.linear_model import (ARDRegression, BayesianRidge, ElasticNet,
-                                  ElasticNetCV, Lars, Lasso, LassoLars,
-                                  LinearRegression, LogisticRegression,
-                                  LogisticRegressionCV,
-                                  OrthogonalMatchingPursuit, Ridge)
-from sklearn.model_selection import (BaseCrossValidator, GridSearchCV, KFold,
-                                     RandomizedSearchCV, StratifiedKFold,
+from sklearn.linear_model import (ElasticNetCV,
+                                  LogisticRegression,
+                                  LogisticRegressionCV,)
+from sklearn.model_selection import (BaseCrossValidator, GridSearchCV,
+                                     RandomizedSearchCV,
                                      check_cv)
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import (MaxAbsScaler, MinMaxScaler,
-                                   PolynomialFeatures, RobustScaler,
+from sklearn.preprocessing import (PolynomialFeatures,
                                    StandardScaler)
 from sklearn.svm import SVC, LinearSVC
 import inspect
 
-# For regression problems
 models_regression = [
     ElasticNetCV(),
     RandomForestRegressor(),
@@ -37,7 +33,6 @@ models_regression = [
 ]
 
 
-# For classification problems
 models_classification = [
     LogisticRegressionCV(),
     RandomForestClassifier(),
@@ -45,18 +40,19 @@ models_classification = [
     MLPClassifier()
 ]
 
-scaling_lst =  [StandardScaler(), MinMaxScaler(), RobustScaler(), MaxAbsScaler()]
 model_list = ['linear', 'forest', 'gbf', 'nnet', 'poly', 'automl']     
 
 def scale_pipeline(model):
     """
     Returns a pipeline that scales the input data using StandardScaler and applies the given model.
 
-    Args:
+    Parameters
+    ----------
         model : estimator object
             A model object that implements the scikit-learn estimator interface.
 
-    Returns:
+    Returns
+    ----------
         pipe : Pipeline object
             A pipeline that scales the input data using StandardScaler and applies the given model.
     """
@@ -67,10 +63,12 @@ def flatten_list(lst):
     """
     Flatten a list that may contain nested lists.
     
-    Args:
+    Parameters
+    ----------
         lst (list): The list to flatten.
     
-    Returns:
+    Returns
+    ----------
         list: The flattened list.
     """
     flattened = []
@@ -96,10 +94,12 @@ def check_list_type(lst):
     """
     Checks if a list only contains strings, sklearn model objects, and sklearn model selection objects.
 
-    Args:
+    Parameters
+    ----------
         lst (list): A list to check.
 
-    Returns:
+    Returns
+    ----------
         bool: True if the list only contains valid objects, False otherwise.
 
     Raises:
@@ -123,10 +123,12 @@ def select_continuous_estimator(estimator_type):
     """
     Returns a continuous estimator object for the specified estimator type.
 
-    Args:
+    Parameters
+    ----------
         estimator_type (str): The type of estimator to use, one of: 'linear', 'forest', 'gbf', 'nnet', 'poly'.
 
-    Returns:
+    Returns
+    ----------
         object: An instance of the selected estimator class.
 
     Raises:
@@ -151,10 +153,12 @@ def select_discrete_estimator(estimator_type):
     """
     Returns a discrete estimator object for the specified estimator type.
 
-    Args:
+    Parameters
+    ----------
         estimator_type (str): The type of estimator to use, one of: 'linear', 'forest', 'gbf', 'nnet', 'poly'.
 
-    Returns:
+    Returns
+    ----------
         object: An instance of the selected estimator class.
 
     Raises:
@@ -179,11 +183,13 @@ def select_estimator(estimator_type, target_type):
     """
     Returns an estimator object for the specified estimator and target types.
 
-    Args:
+    Parameters
+    ----------
         estimator_type (str): The type of estimator to use, one of: 'linear', 'forest', 'gbf', 'nnet', 'poly', 'automl', 'all'.
         target_type (str): The type of target variable, one of: 'continuous', 'discrete'.
 
-    Returns:
+    Returns
+    ----------
         object: An instance of the selected estimator class.
 
     Raises:
@@ -200,18 +206,25 @@ def get_complete_estimator_list(estimator_list, target_type):
     '''
     Returns a list of sklearn objects from an input list of str's, and sklearn objects.
 
-    Args:
-        estimator_list : List of estimators; can be sklearn object or str: 'linear', 'forest', 'gbf', 'nnet', 'poly', 'automl', 'all'.
+    Parameters
+    ----------
+        estimator_list : List of estimators; can be sklearn object or str: 'linear', 'forest', 'gbf', 'nnet', 'poly', 'auto', 'all'.
 
-    Returns:
+    Returns
+    ----------
         object: A list of sklearn objects
 
     Raises:
         ValueError: If the estimator is not supported.
 
     '''
+    # pdb.set_trace()
     if isinstance(estimator_list, str):
-        if estimator_list in ['linear', 'forest', 'gbf', 'nnet', 'poly', 'automl']:
+        if 'all' == estimator_list:
+            estimator_list = ['linear', 'forest', 'gbf', 'nnet', 'poly']
+        elif 'auto' == estimator_list:
+            estimator_list = ['linear', 'forest']
+        elif estimator_list in ['linear', 'forest', 'gbf', 'nnet', 'poly']:
             estimator_list = [estimator_list]
         else: 
             raise ValueError("Invalid estimator_list value. Please provide a valid value from the list of available estimators: ['linear', 'forest', 'gbf', 'nnet', 'poly', 'automl']")
@@ -220,17 +233,21 @@ def get_complete_estimator_list(estimator_list, target_type):
         estimator_list = [estimator_list]
 
     if not isinstance(estimator_list, list):
+        if 'auto' in estimator_list:
+            for estimator in ['linear', 'forest']:
+                if estimator not in estimator_list:
+                    estimator_list.append(estimator)
+        if 'all' in estimator_list:
+            for estimator in ['linear', 'forest', 'gbf', 'nnet', 'poly']:
+                if estimator not in estimator_list:
+                    estimator_list.append(estimator)
         raise ValueError(f"estimator_list should be of type list not: {type(estimator_list)}")
+    
 
-    # Throws error if incompatible elements exist
     check_list_type(estimator_list)
-    # populate list of estimator objects
     temp_est_list = []
     
-    # if 'all' or 'automl' chosen then create list of all estimators to search over
-    if 'automl' in estimator_list or 'all' in estimator_list:
-        estimator_list = ['linear', 'forest', 'gbf', 'nnet', 'poly']
-    # loop over every estimator
+    
     for estimator in estimator_list:
         # if sklearn object: add to list, else turn str into corresponding sklearn object and add to list
         if isinstance(estimator, (BaseEstimator, BaseCrossValidator)):
@@ -245,22 +262,22 @@ def select_classification_hyperparameters(estimator):
     """
     Returns a hyperparameter grid for the specified classification model type.
     
-    Args:
+    Parameters
+    ----------
         model_type (str): The type of model to be used. Valid values are 'linear', 'forest', 'nnet', and 'poly'.
     
-    Returns:
+    Returns
+    ----------
         A dictionary representing the hyperparameter grid to search over.
     """
     
     if isinstance(estimator, LogisticRegressionCV):
-        # Hyperparameter grid for linear classification model
         return {
             'Cs': [0.01, 0.1, 1],
             'penalty': ['l1', 'l2', 'elasticnet'],
             'solver': ['lbfgs', 'liblinear', 'saga']
         }
     elif isinstance(estimator, RandomForestClassifier):
-        # Hyperparameter grid for random forest classification model
         return {
             'n_estimators': [100, 500],
             'max_depth': [None, 5, 10, 20],
@@ -268,7 +285,6 @@ def select_classification_hyperparameters(estimator):
             'min_samples_leaf': [1, 2]
         }
     elif isinstance(estimator, GradientBoostingClassifier):
-        # Hyperparameter grid for gradient boosting classification model
         return {
             'n_estimators': [100, 500],
             'learning_rate': [0.01, 0.05, 0.1],
@@ -276,7 +292,6 @@ def select_classification_hyperparameters(estimator):
             
         }
     elif isinstance(estimator, MLPClassifier):
-        # Hyperparameter grid for neural network classification model
         return {
             'hidden_layer_sizes': [(10,), (50,), (100,)],
             'activation': ['relu'],
@@ -285,7 +300,6 @@ def select_classification_hyperparameters(estimator):
             'learning_rate': ['constant', 'adaptive']
         }
     elif is_polynomial_pipeline(estimator=estimator):
-        # Hyperparameter grid for polynomial kernel classification model
         return {
             'poly__degree': [2, 3, 4],
             'linear__Cs': [1, 10, 20],
@@ -303,10 +317,12 @@ def select_regression_hyperparameters(estimator):
     """
     Returns a dictionary of hyperparameters to be searched over for a regression model.
 
-    Args:
+    Parameters
+    ----------
         model_type (str): The type of model to be used. Valid values are 'linear', 'forest', 'nnet', and 'poly'.
 
-    Returns:
+    Returns
+    ----------
         A dictionary of hyperparameters to be searched over using a grid search.
     """
     if isinstance(estimator, ElasticNetCV):
@@ -352,28 +368,26 @@ def is_linear_model(estimator):
     Check whether an estimator is a polynomial regression, logistic regression, linear SVM, or any other type of
     linear model.
 
-    Args:
+    Parameters
+    ----------
     estimator (scikit-learn estimator): The estimator to check.
 
-    Returns:
+    Returns
+    ----------
     is_linear (bool): True if the estimator is a linear model, False otherwise.
     """
 
-    # Check if the estimator is a polynomial regression
     if isinstance(estimator, Pipeline):
         has_poly_feature_step = any(isinstance(step[1], PolynomialFeatures) for step in estimator.steps)
         if has_poly_feature_step:
             return True
 
-    # Check if the estimator is a linear regression or related model
     if hasattr(estimator, 'fit_intercept') and hasattr(estimator, 'coef_'):
         return True
 
-    # Check if the estimator is a logistic regression or linear SVM
     if isinstance(estimator, (LogisticRegression, LinearSVC, SVC)):
         return True
 
-    # Otherwise, the estimator is not a linear model
     return False
 
 
@@ -381,18 +395,18 @@ def is_data_scaled(X):
     """
     Check if the input data is already centered and scaled using StandardScaler.
 
-    Args:
+    Parameters
+    ----------
         X array-like of shape (n_samples, n_features): The input data.
 
-    Returns:
+    Returns
+    ----------
         is_scaled (bool): Whether the input data is already centered and scaled using StandardScaler or not.
 
     """
-    # Compute the mean and standard deviation of the scaled data
     mean = np.mean(X, axis=0)
     std = np.std(X, axis=0)
 
-    # Check if the mean is close to 0 and the standard deviation is close to 1
     is_scaled = np.allclose(mean, 0.0) and np.allclose(std, 1.0)
 
     return is_scaled
@@ -401,11 +415,13 @@ def auto_hyperparameters(estimator_list, is_discrete=True):
     """
     Selects hyperparameters for a list of estimators.
     
-    Args:
+    Parameters
+    ----------
     - estimator_list: list of scikit-learn estimators
     - is_discrete: boolean indicating whether the problem is classification or regression
     
-    Returns:
+    Returns
+    ----------
     - param_list: list of parameter grids for the estimators
     """
     param_list = []
@@ -432,3 +448,7 @@ def has_random_state(model):
     else:
         signature = inspect.signature(type(model))
     return ("random_state" in signature.parameters)
+
+def supports_sample_weight(estimator):
+    fit_signature = inspect.signature(estimator.fit)
+    return 'sample_weight' in fit_signature.parameters

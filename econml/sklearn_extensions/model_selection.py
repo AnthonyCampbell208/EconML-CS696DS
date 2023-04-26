@@ -261,7 +261,31 @@ class WeightedStratifiedKFold(WeightedKFold):
         return self.n_splits
 
 class SearchEstimatorList(BaseEstimator):
-    def __init__(self, estimator_list = ['linear', 'forest'], param_grid_list = 'auto', scaling=True, is_discrete=False, scoring=None,
+    """
+    Parameters
+    ----------
+        estimator_list: 
+            List of estimator names to be used for searching. Default is ['linear', 'forest'].
+        
+        param_grid_list: 
+            List of dictionaries or 'auto' for hyperparameters of each estimator in estimator_list. 
+            If 'auto', it will automatically generate hyperparameters for the estimators. Default is 'auto'.
+        
+        scaling: 
+            Boolean, whether to scale the input data using StandardScaler. Default is True.
+
+        is_discrete: Boolean, whether the models are discrete or not. Default is False.
+        scoring: Scoring metric to be used for selecting the best estimator. Default is None.
+        n_jobs: Number of CPU cores to use for parallel processing. Default is None.
+        refit: Refit the best estimator with the entire dataset. Default is True.
+        grid_folds: Number of folds for cross-validation. Default is 3.
+        verbose: Verbosity level for the output messages. Default is 2.
+        pre_dispatch: Controls the number of jobs that get dispatched during parallel execution. Default is '2*n_jobs'.
+        random_state: Seed for random number generation. Default is None.
+        error_score: Value to assign to the score if an error occurs in estimator fitting. Default is np.nan.
+        return_train_score: Whether to include training scores in the cv_results attribute. Default is False.
+    """
+    def __init__(self, estimator_list = ['linear', 'forest'], param_grid_list = None, scaling=True, is_discrete=False, scoring=None,
                  n_jobs=None, refit=True, grid_folds=3, verbose=2, pre_dispatch='2*n_jobs', random_state=None,
                  error_score=np.nan, return_train_score=False):
         
@@ -280,7 +304,7 @@ class SearchEstimatorList(BaseEstimator):
         self.scoring = scoring
         if scoring == None:
             if is_discrete:
-                self.scoring = 'f1'
+                self.scoring = 'f1_macro'
             else:
                 self.scoring = 'neg_mean_squared_error'
             warnings.warn(f"No scoring value was given. Using default score method {self.scoring}.")
@@ -302,24 +326,23 @@ class SearchEstimatorList(BaseEstimator):
         self._search_list = []
         
         if self.scaling:
-            # pdb.set_trace()
-            if is_data_scaled(X):
-                warnings.warn("Data may already be scaled. Scaling twice may negatively affect results.", UserWarning)
-            self.scaler = StandardScaler()
-            self.scaler.fit(X)
-            scaled_X = self.scaler.transform(X)
+            if not is_data_scaled(X):
+                self.scaler = StandardScaler()
+                self.scaler.fit(X)
+                scaled_X = self.scaler.transform(X)
 
         for estimator, param_grid in zip(self.complete_estimator_list, self.param_grid_list):
             try:
                 if self.random_state != None:
-                    # pdb.set_trace()
                     if has_random_state(model=estimator):
+                        # For a polynomial pipeline, you have to set the random state of the linear part, the polynomial part doesn't have random state
                         if is_polynomial_pipeline(estimator):
                             estimator = estimator.set_params(linear__random_state=42)
                         else:
                             estimator.set_params(random_state=42)
                 print(estimator)
                 print(param_grid)
+                
                 temp_search = GridSearchCV(estimator, param_grid, scoring=self.scoring,
                                        n_jobs=self.n_jobs, refit=self.refit, cv=self.grid_folds, verbose=self.verbose,
                                        pre_dispatch=self.pre_dispatch, error_score=self.error_score,
@@ -337,6 +360,8 @@ class SearchEstimatorList(BaseEstimator):
                         temp_search.fit(X, y, groups=groups, linear__sample_weight=sample_weight)
                     elif is_mlp(estimator=estimator):
                         temp_search.fit(X, y, groups=groups)
+                    elif not supports_sample_weight(estimator=estimator):
+                        temp_search.fit(X, y, groups=groups)
                     else:
                         temp_search.fit(X, y,  groups=groups, sample_weight=sample_weight)
                     self._search_list.append(temp_search)
@@ -351,7 +376,6 @@ class SearchEstimatorList(BaseEstimator):
         self.best_score_ = self._search_list[self.best_ind_].best_score_
         self.best_params_ = self._search_list[self.best_ind_].best_params_
         print(f'Best estimator {self.best_estimator_} and best score {self.best_score_} and best params {self.best_params_}')
-        # pdb.set_trace()
         return self
     
     def scaler_transform(self, X):
@@ -363,7 +387,7 @@ class SearchEstimatorList(BaseEstimator):
         if self.scaling:    
             return self.best_estimator_.predict(self.scaler.transform(X))
         return self.best_estimator_.predict(X)
-    def predict_prob(self, X):
+    def predict_proba(self, X):
         return self.best_estimator_.predict_proba(X)
     
 class GridSearchCVList(BaseEstimator):
