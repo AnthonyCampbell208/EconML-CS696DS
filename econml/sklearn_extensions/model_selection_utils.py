@@ -233,7 +233,7 @@ def get_complete_estimator_list(estimator_list, is_discrete):
         if 'all' == estimator_list:
             estimator_list = ['linear', 'forest', 'gbf', 'nnet', 'poly']
         elif 'auto' == estimator_list:
-            estimator_list = ['linear', 'forest']
+            estimator_list = ['linear']
         elif estimator_list in ['linear', 'forest', 'gbf', 'nnet', 'poly']:
             estimator_list = [estimator_list]
         else:
@@ -245,7 +245,7 @@ def get_complete_estimator_list(estimator_list, is_discrete):
 
     if not isinstance(estimator_list, list):
         if 'auto' in estimator_list:
-            for estimator in ['linear', 'forest']:
+            for estimator in ['linear']:
                 if estimator not in estimator_list:
                     estimator_list.append(estimator)
         if 'all' in estimator_list:
@@ -284,6 +284,7 @@ def select_classification_hyperparameters(estimator):
     if isinstance(estimator, LogisticRegressionCV):
         return {
             'Cs': [0.01, 0.1, 1],
+            'cv': [3],
             'penalty': ['l1', 'l2', 'elasticnet'],
             'solver': ['lbfgs', 'liblinear', 'saga']
         }
@@ -338,11 +339,12 @@ def select_regression_hyperparameters(estimator):
     if isinstance(estimator, ElasticNetCV):
         return {
             'l1_ratio': [0.1, 0.5, 0.9],
+            'cv': [3],
             'max_iter': [1000],
         }
     elif isinstance(estimator, RandomForestRegressor):
         return {
-            'n_estimators': [50],
+            'n_estimators': [100],
             'max_depth': [None, 10, 50],
             'min_samples_split': [2, 5, 10],
         }
@@ -354,8 +356,8 @@ def select_regression_hyperparameters(estimator):
         }
     elif isinstance(estimator, GradientBoostingRegressor):
         return {
-            'n_estimators': [100],
-            'learning_rate': [0.01, 0.1, 1.0],
+            'n_estimators': [100, 500],
+            'learning_rate': [0.01, 0.1, 0.05],
             'max_depth': [3, 5],
         }
     elif is_polynomial_pipeline(estimator=estimator):

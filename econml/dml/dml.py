@@ -469,8 +469,8 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
 
     def __init__(self, *,
                  model_y, model_t, model_final,
-                 param_list_y='auto',
-                 param_list_t='auto',
+                 param_list_y=None,
+                 param_list_t=None,
                  scaling=True,
                  featurizer=None,
                  treatment_featurizer=None,
@@ -523,6 +523,8 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
                                   self.linear_first_stages, self.discrete_treatment)
 
     def _gen_model_t(self):  # New
+        # import pdb
+        # pdb.set_trace()
         if self.model_t == 'auto':
             model_t = SearchEstimatorList(estimator_list=self.model_t, param_grid_list=self.param_list_t,
                                           scaling=self.scaling, verbose=self.verbose, grid_folds=self.grid_folds, is_discrete=self.discrete_treatment,
@@ -581,6 +583,8 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
         -------
         self
         """
+        # import pdb
+        # pdb.set_trace()
         return super().fit(Y, T, X=X, W=W, sample_weight=sample_weight, freq_weight=freq_weight,
                            sample_var=sample_var, groups=groups,
                            cache_values=cache_values,
@@ -712,8 +716,8 @@ class LinearDML(StatsModelsCateEstimatorMixin, DML):
 
     def __init__(self, *,
                  model_y='auto', model_t='auto',
-                 param_list_y='auto',
-                 param_list_t='auto',
+                 param_list_y=None,
+                 param_list_t=None,
                  featurizer=None,
                  treatment_featurizer=None,
                  fit_cate_intercept=True,

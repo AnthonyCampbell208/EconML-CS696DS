@@ -290,7 +290,7 @@ class SearchEstimatorList(BaseEstimator):
     def __init__(self, estimator_list=['linear', 'forest'], param_grid_list=None, scaling=True, is_discrete=False, scoring=None,
                  n_jobs=None, refit=True, grid_folds=2, verbose=2, pre_dispatch='2*n_jobs', random_state=None,
                  error_score=np.nan, return_train_score=False):
-
+        # pdb.set_trace()
         self.estimator_list = estimator_list
         self.complete_estimator_list = get_complete_estimator_list(
             clone(estimator_list, safe=False), is_discrete)
@@ -358,7 +358,7 @@ class SearchEstimatorList(BaseEstimator):
                             estimator.set_params(random_state=self.random_state)
                 print(estimator)
                 print(param_grid)
-                pdb.set_trace()
+                # pdb.set_trace()
                 temp_search = GridSearchCV(estimator, param_grid, scoring=self.scoring,
                                            n_jobs=self.n_jobs, refit=self.refit, cv=self.grid_folds, verbose=self.verbose,
                                            pre_dispatch=self.pre_dispatch, error_score=self.error_score,
@@ -389,7 +389,7 @@ class SearchEstimatorList(BaseEstimator):
             if not hasattr(temp_search, 'cv_results_'):
                 warning_msg = f"Warning: estimator {estimator} and param_grid {param_grid} failed"
                 warnings.warn(warning_msg, category=FitFailedWarning)
-        pdb.set_trace()
+        # pdb.set_trace()
         self.best_ind_ = np.argmax([search.best_score_ for search in self._search_list])
         self.best_estimator_ = self._search_list[self.best_ind_].best_estimator_
         self.best_score_ = self._search_list[self.best_ind_].best_score_
