@@ -268,7 +268,7 @@ def get_complete_estimator_list(estimator_list, is_discrete):
 
     for estimator in temp_est_list:
         if not is_regressor_or_classifier(estimator, is_discrete=is_discrete):
-            raise ValueError("Invalid estimator type: {} - must be a regressor or classifier".format(type(estimator)))
+            raise TypeError("Invalid estimator type: {} - must be a regressor or classifier".format(type(estimator)))
     return temp_est_list
 
 
