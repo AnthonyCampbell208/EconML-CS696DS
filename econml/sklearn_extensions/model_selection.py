@@ -413,6 +413,14 @@ class SearchEstimatorList(BaseEstimator):
     def predict_proba(self, X):
         return self.best_estimator_.predict_proba(X)
 
+    def refit(self, X, y):
+        # Refits the best estimator using the entire dataset.
+        if self.best_estimator_ is None:
+            raise ValueError("No best estimator found. Please call the 'fit' method before calling 'refit'.")
+
+        self.best_estimator_.fit(X, y)
+        return self
+
 
 class GridSearchCVList(BaseEstimator):
     """ An extension of GridSearchCV that allows for passing a list of estimators each with their own

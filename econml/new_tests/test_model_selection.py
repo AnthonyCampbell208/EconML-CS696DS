@@ -203,6 +203,64 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         self.assertIsNotNone(search.best_score_)
         self.assertIsNotNone(search.best_params_)
 
+    def test_data_scaling(self):
+        search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete, scaling=True)
+        search.fit(self.X_train, self.y_train)
+        y_pred = search.predict(self.X_test)
+        acc = accuracy_score(self.y_test, y_pred)
+        f1 = f1_score(self.y_test, y_pred, average='macro')
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+        self.assertIsInstance(search.complete_estimator_list[0], LogisticRegressionCV)
+
+        self.assertGreaterEqual(acc, self.expected_accuracy)
+        self.assertGreaterEqual(f1, self.expected_f1_score)
+
+    def test_custom_scoring_function(self):
+        def custom_scorer(y_true, y_pred):
+            return f1_score(y_true, y_pred, average='macro')
+
+        search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete,
+                                     scaling=False, scoring=custom_scorer)
+        search.fit(self.X_train, self.y_train)
+        y_pred = search.predict(self.X_test)
+        acc = accuracy_score(self.y_test, y_pred)
+        f1 = f1_score(self.y_test, y_pred, average='macro')
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+        self.assertIsInstance(search.complete_estimator_list[0], LogisticRegressionCV)
+
+        self.assertGreaterEqual(acc, self.expected_accuracy)
+        self.assertGreaterEqual(f1, self.expected_f1_score)
+
+    def test_refit_false(self):
+        search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete, scaling=False, refit=False)
+        search.fit(self.X_train, self.y_train)
+        with self.assertRaises(NotFittedError):
+            y_pred = search.predict(self.X_test)
+
+    def test_custom_random_state(self):
+        search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete,
+                                     scaling=False, random_state=42)
+        search.fit(self.X_train, self.y_train)
+        y_pred = search.predict(self.X_test)
+        acc = accuracy_score(self.y_test, y_pred)
+        f1 = f1_score(self.y_test, y_pred, average='macro')
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+        self.assertIsInstance(search.complete_estimator_list[0], LogisticRegressionCV)
+
+        self.assertGreaterEqual(acc, self.expected_accuracy)
+        self.assertGreaterEqual(f1, self.expected_f1_score)
+
+    def test_invalid_custom_scoring_function(self):
+        with self.assertRaises(ValueError):
+            search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete,
+                                         scaling=False, scoring='invalid_scorer')
+
 
 if __name__ == '__main__':
     unittest.main()

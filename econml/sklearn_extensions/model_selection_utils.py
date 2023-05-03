@@ -25,6 +25,7 @@ from sklearn.preprocessing import (PolynomialFeatures,
 from sklearn.svm import SVC, LinearSVC
 import inspect
 from sklearn.base import ClassifierMixin, RegressorMixin
+from sklearn.exceptions import NotFittedError
 
 models_regression = [
     ElasticNetCV(),
