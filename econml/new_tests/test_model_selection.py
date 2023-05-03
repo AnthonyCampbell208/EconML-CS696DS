@@ -25,7 +25,7 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
     def test_auto_param_grid_discrete(self):
 
         search_estimator_list = SearchEstimatorList(is_discrete=True)
-        search_estimator_list.select(self.X_train, self.y_train)
+        search_estimator_list.fit(self.X_train, self.y_train)
         self.assertIsNotNone(search_estimator_list.best_estimator_)
         self.assertIsNotNone(search_estimator_list.best_score_)
         self.assertIsNotNone(search_estimator_list.best_params_)
@@ -37,7 +37,7 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         param_grid_list = [{'n_estimators': [10, 50, 100], 'max_depth': [3, 5, None]}]
         search_estimator_list = SearchEstimatorList(
             estimator_list=estimator_list, param_grid_list=param_grid_list, is_discrete=True)
-        search_estimator_list.select(self.X_train, self.y_train)
+        search_estimator_list.fit(self.X_train, self.y_train)
         self.assertIsNotNone(search_estimator_list.best_estimator_)
         self.assertIsNotNone(search_estimator_list.best_score_)
         self.assertIsNotNone(search_estimator_list.best_params_)
@@ -47,82 +47,83 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
 
     def test_linear_estimator(self):
         search = SearchEstimatorList(estimator_list='linear', is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_poly_estimator(self):
         search = SearchEstimatorList(estimator_list='poly', is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_gbf_estimator(self):
         search = SearchEstimatorList(estimator_list='gbf', is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_nnet_estimator(self):
         search = SearchEstimatorList(estimator_list='nnet', is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_linear_and_forest_estimators(self):
         search = SearchEstimatorList(estimator_list=['linear', 'forest'], is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_all_estimators(self):
         search = SearchEstimatorList(estimator_list=['linear', 'forest', 'gbf', 'nnet', 'poly'], is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_logistic_regression_estimator(self):
         search = SearchEstimatorList(estimator_list=LogisticRegression(), is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_logistic_regression_cv_estimator(self):
         search = SearchEstimatorList(estimator_list=LogisticRegressionCV(), is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
-        self.assertAlmostEqual(f1, your_expected_f1_score, delta=your_f1_score_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
     def test_empty_estimator_list(self):
         search = SearchEstimatorList(estimator_list=[], is_discrete=True)
-        search.select(self.X_train, self.y_train)
+        search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
-        self.assertAlmostEqual(acc, your_expected_accuracy, delta=your_accuracy_tolerance)
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+
 
 if __name__ == '__main__':
     unittest.main()
