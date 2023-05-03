@@ -54,3 +54,42 @@ class TestIsDataScaled(unittest.TestCase):
     def test_is_data_scaled_with_unscaled_california_housing_dataset(self):
         X, y = fetch_california_housing(return_X_y=True)
         assert is_data_scaled(X) == False
+
+
+class TestFlattenList(unittest.TestCase):
+
+    def test_flatten_empty_list(self):
+        input = []
+        expected_output = []
+        self.assertEqual(flatten_list(input), expected_output)
+
+    def test_flatten_simple_list(self):
+        input = [1, 10, 15]
+        expected_output = [1, 10, 15]
+        self.assertEqual(flatten_list(input), expected_output)
+
+    def test_flatten_nested_list(self):
+        input = [1, [10, 15], [20, [25, 30]]]
+        expected_output = [1, 10, 15, 20, 25, 30]
+        self.assertEqual(flatten_list(input), expected_output)
+
+    # Check functionality for below
+    # def test_flatten_none_list(self):
+    #     input = [[1, 10, None], 15, None]
+    #     expected_output = [1, 10, None, 15, None]
+    #     self.assertEqual(flatten_list(input), expected_output)
+
+    def test_flatten_iris_dataset(self):
+        X = load_iris()
+        input = X.data.tolist()
+        expected_output = sum(X.data.tolist(), [])
+        self.assertEqual(flatten_list(input), expected_output)
+
+    def test_flatten_california_housing_dataset(self):
+        X = fetch_california_housing()
+        input = X.data.tolist()
+        expected_output = sum(X.data.tolist(), [])
+        self.assertEqual(flatten_list(input), expected_output)
+
+if __name__ == '__main__':
+    unittest.main()
