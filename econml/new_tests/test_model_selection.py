@@ -30,27 +30,17 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         self.assertIsNotNone(search_estimator_list.best_score_)
         self.assertIsNotNone(search_estimator_list.best_params_)
 
-    def test_random_forest_discrete(self):
-        X, y = load_iris(return_X_y=True)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.6, random_state=42)
-        estimator_list = [RandomForestClassifier()]
-        param_grid_list = [{'n_estimators': [10, 50, 100], 'max_depth': [3, 5, None]}]
-        search_estimator_list = SearchEstimatorList(
-            estimator_list=estimator_list, param_grid_list=param_grid_list, is_discrete=True)
-        search_estimator_list.fit(self.X_train, self.y_train)
-        self.assertIsNotNone(search_estimator_list.best_estimator_)
-        self.assertIsNotNone(search_estimator_list.best_score_)
-        self.assertIsNotNone(search_estimator_list.best_params_)
-        print("Best estimator: ", search_estimator_list.best_estimator_)
-        print("Best score: ", search_estimator_list.best_score_)
-        print("Best parameters: ", search_estimator_list.best_params_)
-
     def test_linear_estimator(self):
         search = SearchEstimatorList(estimator_list='linear', is_discrete=True)
         search.fit(self.X_train, self.y_train)
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+        self.assertEqual(type(search.complete_estimator_list[0]), LogisticRegressionCV)
+
         self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
         self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
@@ -60,6 +50,24 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertTrue(is_polynomial_pipeline(search.complete_estimator_list[0]))
+
+        self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+        self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
+
+    def test_forest_estimator(self):
+        search = SearchEstimatorList(estimator_list='forest', is_discrete=True)
+        search.fit(self.X_train, self.y_train)
+        y_pred = search.predict(self.X_test)
+        acc = accuracy_score(self.y_test, y_pred)
+        f1 = f1_score(self.y_test, y_pred, average=None)
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+        self.assertEqual(type(search.complete_estimator_list[0]), RandomForestClassifier)
+
         self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
         self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
@@ -69,6 +77,11 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+        self.assertEqual(type(search.complete_estimator_list[0]), GradientBoostingClassifier)
+
         self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
         self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
@@ -78,6 +91,11 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+        self.assertEqual(type(search.complete_estimator_list[0]), MLPClassifier)
+
         self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
         self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
@@ -87,6 +105,12 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
+
+        self.assertEqual(len(search.complete_estimator_list), 2)
+        self.assertEqual(len(search.param_grid_list), 2)
+        self.assertEqual(type(search.complete_estimator_list[0]), LogisticRegressionCV)
+        self.assertEqual(type(search.complete_estimator_list[1]), RandomForestClassifier)
+
         self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
         self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
@@ -96,6 +120,10 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         f1 = f1_score(self.y_test, y_pred, average=None)
+
+        self.assertEqual(len(search.complete_estimator_list), 5)
+        self.assertEqual(len(search.param_grid_list), 5)
+
         self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
         self.assertAlmostEqual(f1, expected_f1_score, delta=f1_score_tolerance)
 
@@ -123,6 +151,23 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         y_pred = search.predict(self.X_test)
         acc = accuracy_score(self.y_test, y_pred)
         self.assertAlmostEqual(acc, expected_accuracy, delta=accuracy_tolerance)
+
+    def test_random_forest_discrete(self):
+        X, y = load_iris(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.6, random_state=42)
+        estimator_list = [RandomForestClassifier()]
+        param_grid_list = [{'n_estimators': [10, 50, 100], 'max_depth': [3, 5, None]}]
+
+        search = SearchEstimatorList(
+            estimator_list=estimator_list, param_grid_list=param_grid_list, is_discrete=True)
+        search.fit(self.X_train, self.y_train)
+
+        self.assertEqual(len(search.complete_estimator_list), 1)
+        self.assertEqual(len(search.param_grid_list), 1)
+
+        self.assertIsNotNone(search.best_estimator_)
+        self.assertIsNotNone(search.best_score_)
+        self.assertIsNotNone(search.best_params_)
 
 
 if __name__ == '__main__':
