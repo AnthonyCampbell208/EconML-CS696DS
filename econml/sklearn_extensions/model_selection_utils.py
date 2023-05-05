@@ -259,7 +259,8 @@ def get_complete_estimator_list(estimator_list, is_discrete):
     check_list_type(estimator_list)
     temp_est_list = []
 
-    for estimator in estimator_list:
+    # Set to remove duplicates
+    for estimator in set(estimator_list):
         # if sklearn object: add to list, else turn str into corresponding sklearn object and add to list
         if isinstance(estimator, (BaseEstimator, BaseCrossValidator)):
             temp_est_list.append(estimator)
@@ -267,6 +268,7 @@ def get_complete_estimator_list(estimator_list, is_discrete):
             temp_est_list.append(select_estimator(estimator, is_discrete))
     temp_est_list = flatten_list(temp_est_list)
 
+    # Check that all types of models are matched towards the problem. 
     for estimator in temp_est_list:
         if not is_regressor_or_classifier(estimator, is_discrete=is_discrete):
             raise TypeError("Invalid estimator type: {} - must be a regressor or classifier".format(type(estimator)))
