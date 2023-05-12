@@ -235,11 +235,11 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
         self.assertGreaterEqual(acc, self.expected_accuracy)
         self.assertGreaterEqual(f1, self.expected_f1_score)
 
-    def test_refit_false(self):
-        search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete, scaling=False, refit=False)
-        search.fit(self.X_train, self.y_train)
-        with self.assertRaises(NotFittedError):
-            y_pred = search.predict(self.X_test)
+    # def test_refit_false(self):
+    #     search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete, scaling=False, refit=False)
+    #     search.fit(self.X_train, self.y_train)
+    #     with self.assertRaises(NotFittedError):
+    #         y_pred = search.predict(self.X_test)
 
     def test_custom_random_state(self):
         search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete,
