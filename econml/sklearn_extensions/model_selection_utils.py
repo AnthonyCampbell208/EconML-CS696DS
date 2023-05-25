@@ -26,6 +26,7 @@ from sklearn.svm import SVC, LinearSVC
 import inspect
 from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.exceptions import NotFittedError
+from sklearn.metrics import make_scorer, SCORERS
 
 models_regression = [
     ElasticNetCV(),
@@ -268,9 +269,10 @@ def get_complete_estimator_list(estimator_list, is_discrete):
             temp_est_list.append(select_estimator(estimator, is_discrete))
     temp_est_list = flatten_list(temp_est_list)
 
-    # Check that all types of models are matched towards the problem. 
+    # Check that all types of models are matched towards the problem.
     for estimator in temp_est_list:
         if not is_regressor_or_classifier(estimator, is_discrete=is_discrete):
+            # This is a bug it doesn't work with hyperparameters
             raise TypeError("Invalid estimator type: {} - must be a regressor or classifier".format(type(estimator)))
     return temp_est_list
 
@@ -476,14 +478,28 @@ def supports_sample_weight(estimator):
 def just_one_model_no_params(estimator_list, param_list):
     return (len(estimator_list) == 1) and (len(param_list) == 1) and (len(param_list[0]) == 0)
 
+
 def is_regressor_or_classifier(model, is_discrete):
     if is_discrete:
         if is_polynomial_pipeline(model):
-            return isinstance(model[1], ClassifierMixin)    
+            return isinstance(model[1], ClassifierMixin)
         else:
             return isinstance(model, ClassifierMixin)
     else:
         if is_polynomial_pipeline(model):
-            return isinstance(model[1], RegressorMixin)    
+            return isinstance(model[1], RegressorMixin)
         else:
             return isinstance(model, RegressorMixin)
+
+
+def is_valid_scoring_metric(metric):
+    if isinstance(metric, str):
+        return metric in SCORERS.keys()
+    elif callable(metric):
+        try:
+            make_scorer(metric)
+            return True
+        except ValueError:
+            return False
+    else:
+        return False

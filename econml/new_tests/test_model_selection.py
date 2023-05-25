@@ -261,6 +261,13 @@ class TestSearchEstimatorListClassifier(unittest.TestCase):
             search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete,
                                          scaling=False, scoring='invalid_scorer')
 
+    def test_invalid_incorrect_scoring_numbers(self):
+        with self.assertRaises(ValueError):
+            search = SearchEstimatorList(estimator_list='linear', is_discrete=self.is_discrete,
+                                         scaling=False, scoring=123)
+    
+    
+
 
 if __name__ == '__main__':
     unittest.main()

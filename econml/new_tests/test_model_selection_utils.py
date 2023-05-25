@@ -8,6 +8,7 @@ from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNetCV, LogisticRegressionCV
 
+
 class TestIsDataScaled(unittest.TestCase):
 
     def test_scaled_data(self):
@@ -91,6 +92,7 @@ class TestFlattenList(unittest.TestCase):
         expected_output = sum(X.data.tolist(), [])
         self.assertEqual(flatten_list(input), expected_output)
 
+
 class TestIsPolynomialPipeline(unittest.TestCase):
 
     def test_is_polynomial_pipeline_true(self):
@@ -126,7 +128,7 @@ class TestIsPolynomialPipeline(unittest.TestCase):
         ])
         assert is_polynomial_pipeline(model) == False
 
-    #Cross-check functionaity - can the 'poly' keyword be changed to something else
+    # Cross-check functionaity - can the 'poly' keyword be changed to something else
     def test_is_polynomial_pipeline_false_first_step(self):
         X, y = fetch_california_housing(return_X_y=True)
         model = Pipeline([
@@ -134,6 +136,7 @@ class TestIsPolynomialPipeline(unittest.TestCase):
             ('linear', ElasticNetCV())
         ])
         assert is_polynomial_pipeline(model) == True
+
 
 class TestCheckListType(unittest.TestCase):
 
@@ -154,7 +157,7 @@ class TestCheckListType(unittest.TestCase):
             check_list_type(list)
         except ValueError as e:
             assert str(e) == "Estimator list is empty. Please add some models or use some of the defaults provided."
-    
+
     def test_check_list_type_all_strings(self):
         list = ['linear', 'lasso', 'forest']
         assert check_list_type(list) == True
@@ -166,6 +169,7 @@ class TestCheckListType(unittest.TestCase):
     def test_check_list_duplicate_models_strings(self):
         list = [LogisticRegressionCV(), LogisticRegressionCV(), 'linear', 'linear']
         assert check_list_type(list) == True
+
 
 class TestSelectContinuousEstimator(unittest.TestCase):
 
@@ -182,6 +186,7 @@ class TestSelectContinuousEstimator(unittest.TestCase):
         except ValueError as e:
             assert str(e) == 'Unsupported estimator type: ridge'
 
+
 class TestSelectDiscreteEstimator(unittest.TestCase):
 
     def test_select_discrete_estimator_valid(self):
@@ -196,6 +201,7 @@ class TestSelectDiscreteEstimator(unittest.TestCase):
             select_discrete_estimator('lasso')
         except ValueError as e:
             assert str(e) == 'Unsupported estimator type: lasso'
+
 
 class TestSelectEstimator(unittest.TestCase):
 
@@ -223,6 +229,7 @@ class TestSelectEstimator(unittest.TestCase):
             select_estimator('linear', is_discrete=None)
         except ValueError as e:
             assert str(e) == 'Unsupported target type: None'
+
 
 if __name__ == '__main__':
     unittest.main()
