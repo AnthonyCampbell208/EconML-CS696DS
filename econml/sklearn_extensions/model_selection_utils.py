@@ -484,11 +484,13 @@ def is_regressor_or_classifier(model, is_discrete):
         if is_polynomial_pipeline(model):
             return isinstance(model[1], ClassifierMixin)
         else:
+            # Change to is_classifier
             return isinstance(model, ClassifierMixin)
     else:
         if is_polynomial_pipeline(model):
             return isinstance(model[1], RegressorMixin)
         else:
+            # Change to is_regressor
             return isinstance(model, RegressorMixin)
 
 
