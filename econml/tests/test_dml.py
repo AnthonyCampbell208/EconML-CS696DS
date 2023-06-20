@@ -23,6 +23,8 @@ import econml.tests.utilities  # bugfix for assertWarns
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.multioutput import MultiOutputRegressor
 from econml.grf import MultiOutputGRF
+from econml.sklearn_extensions.model_selection import SearchEstimatorList
+import pdb
 
 # all solutions to underdetermined (or exactly determined) Ax=b are given by A⁺b+(I-A⁺A)w for some arbitrary w
 # note that if Ax=b is overdetermined, this will raise an assertion error
@@ -586,9 +588,9 @@ class TestDML(unittest.TestCase):
         assert isinstance(est.featurizer_, Pipeline)
         assert isinstance(est.model_cate, WeightedLasso)
         for mdl in est.models_y[0]:
-            assert isinstance(mdl, WeightedLasso)
+            assert isinstance(mdl, SearchEstimatorList)
         for mdl in est.models_t[0]:
-            assert isinstance(mdl, LogisticRegression)
+            assert isinstance(mdl, SearchEstimatorList)
         np.testing.assert_array_equal(est.cate_feature_names(['A']), ['A', 'A^2'])
         np.testing.assert_array_equal(est.cate_feature_names(), ['X0', 'X0^2'])
         est = DML(model_y=WeightedLasso(),
@@ -602,9 +604,9 @@ class TestDML(unittest.TestCase):
         assert isinstance(est.featurizer_, FunctionTransformer)
         assert isinstance(est.model_cate, WeightedLasso)
         for mdl in est.models_y[0]:
-            assert isinstance(mdl, WeightedLasso)
+            assert isinstance(mdl, SearchEstimatorList)
         for mdl in est.models_t[0]:
-            assert isinstance(mdl, LogisticRegression)
+            assert isinstance(mdl, SearchEstimatorList)
         np.testing.assert_array_equal(est.cate_feature_names(['A']), ['A'])
 
     def test_forest_dml_perf(self):

@@ -35,7 +35,7 @@ from ..utilities import (_deprecate_positional, add_intercept,
                          get_feature_names_or_default, filter_none_kwargs)
 from .._shap import _shap_explain_model_cate
 from ..sklearn_extensions.model_selection import SearchEstimatorList
-
+import pdb
 
 class _FirstStageWrapper:
     def __init__(self, model, is_Y, featurizer, linear_first_stages, discrete_treatment):
@@ -533,7 +533,7 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
             # model_t = WeightedLassoCVWrapper(random_state=self.random_state)
         else:
             model_t = clone(SearchEstimatorList(estimator_list=self.model_t, param_grid_list=self.param_list_t,
-                                                scaling=self.scaling, grid_folds=self.grid_folds, verbose=self.verbose, n_jobs=self.n_jobs, random_state=self.random_state), safe=False)
+                                                scaling=self.scaling, verbose=self.verbose, grid_folds=self.grid_folds, is_discrete=self.discrete_treatment, n_jobs=self.n_jobs, random_state=self.random_state), safe=False)
         return _FirstStageWrapper(model_t, False, self._gen_featurizer(),
                                   self.linear_first_stages, self.discrete_treatment)
 
@@ -583,8 +583,6 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
         -------
         self
         """
-        # import pdb
-        # pdb.set_trace()
         return super().fit(Y, T, X=X, W=W, sample_weight=sample_weight, freq_weight=freq_weight,
                            sample_var=sample_var, groups=groups,
                            cache_values=cache_values,

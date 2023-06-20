@@ -263,37 +263,66 @@ class WeightedStratifiedKFold(WeightedKFold):
 
 class SearchEstimatorList(BaseEstimator):
     """
+    The SearchEstimatorList is a utility class for hyperparameter tuning.
+    It provides a convenient way to perform GridSearch cross-validation for 
+    a list of estimators. The class automates the process of hyperparameter 
+    tuning, model fitting, and prediction for multiple estimators.
+
+
     Parameters
     ----------
-        estimator_list: 
-            List of estimator names to be used for searching. Default is ['linear', 'forest'].
+    estimator_list : list, string, or sklearn model object, default ['linear', 'forest']
+        A list of names of estimators to be used for grid search.
 
-        param_grid_list: 
-            List of dictionaries or 'auto' for hyperparameters of each estimator in estimator_list. 
-            If 'auto', it will automatically generate hyperparameters for the estimators. Default is 'auto'.
+    param_grid_list : list or 'auto', default 'auto'
+        A list of dictionaries specifying hyperparameters for each estimator in `estimator_list`. If set to 'auto', the class automatically generates hyperparameters for the estimators.
 
-        scaling: 
-            Boolean, whether to scale the input data using StandardScaler. Default is True.
+    scaling : bool, default True
+        Indicates whether to scale the input data using StandardScaler.
 
-        is_discrete: Boolean, whether the models are discrete or not. Default is False.
-        scoring: Scoring metric to be used for selecting the best estimator. Default is None.
-        n_jobs: Number of CPU cores to use for parallel processing. Default is None.
-        refit: Refit the best estimator with the entire dataset. Default is True.
-        grid_folds: Number of folds for cross-validation. Default is 3.
-        verbose: Verbosity level for the output messages. Default is 2.
-        pre_dispatch: Controls the number of jobs that get dispatched during parallel execution. Default is '2*n_jobs'.
-        random_state: Seed for random number generation. Default is None.
-        error_score: Value to assign to the score if an error occurs in estimator fitting. Default is np.nan.
-        return_train_score: Whether to include training scores in the cv_results attribute. Default is False.
+    is_discrete : bool, default False
+        Specifies if the models in `estimator_list` are discrete.
+
+    scoring : str or None, default None
+        The scoring metric to be used for selecting the best estimator.
+
+    n_jobs : int or None, default None
+        The number of CPU cores to use for parallel processing during grid search.
+
+    refit : bool, default True
+        Determines whether to refit the best estimator with the entire dataset after grid search.
+
+    grid_folds : int, default 3
+        Number of folds for the cross-validation during grid search. Must be at least 2.
+
+    verbose : int, default 2
+        Verbosity level of the class's methods and inner workings.
+
+    pre_dispatch : str, default '2*n_jobs'
+        Controls the number of jobs that get dispatched during parallel execution of the grid search.
+
+    random_state : int, RandomState instance, or None, default None
+        If int, `random_state` is the seed used by the random number generator;
+        If `RandomState` instance, `random_state` is the random number generator;
+        If None, the random number generator is the `RandomState` instance used by `np.random<numpy.random>`. Used when `shuffle` == True.
+
+    error_score : float or 'raise', default np.nan
+        The value assigned to the score if an error occurs during fitting an estimator. If set to 'raise', an error is raised.
+
+    return_train_score : bool, default False
+        Determines whether to include training scores in the `cv_results_` attribute of the class.
+
+    categorical_indices : str, int, list, or None default None
+        List of categorical indices 
     """
 
     def __init__(self, estimator_list=['linear', 'forest'], param_grid_list=None, scaling=True, is_discrete=False, scoring=None,
                  n_jobs=None, refit=True, grid_folds=2, verbose=2, pre_dispatch='2*n_jobs', random_state=None,
-                 error_score=np.nan, return_train_score=False):
+                 error_score=np.nan, return_train_score=False, categorical_indices=None):
         # pdb.set_trace()
         self.estimator_list = estimator_list
         self.complete_estimator_list = get_complete_estimator_list(
-            clone(estimator_list, safe=False), is_discrete)
+            clone(estimator_list, safe=False), is_discrete=is_discrete)
 
         # TODO Add in more functionality by checking if it's an empty list. If it's just 1 dictionary then we're going to need to turn it into a list
         # Just do more cases
@@ -304,7 +333,7 @@ class SearchEstimatorList(BaseEstimator):
             self.param_grid_list = len(self.complete_estimator_list) * [{}]
         else:
             self.param_grid_list = param_grid_list
-        # self.categorical_indices = categorical_indices
+        self.categorical_indices = categorical_indices
         self.scoring = scoring
         if scoring == None:
             if is_discrete:
@@ -324,6 +353,12 @@ class SearchEstimatorList(BaseEstimator):
         self.is_discrete = is_discrete
 
     def fit(self, X, y, *, sample_weight=None, groups=None):
+        # print(groups)
+        if groups != None:
+            pdb.set_trace()
+
+        if is_multi_task(y):
+            None
         self._search_list = []
 
         if self.scaling:
@@ -346,7 +381,6 @@ class SearchEstimatorList(BaseEstimator):
             self.best_score_ = None
             self.best_params_ = {}
             return self
-
         for estimator, param_grid in zip(self.complete_estimator_list, self.param_grid_list):
             try:
                 if self.random_state != None:
@@ -384,10 +418,12 @@ class SearchEstimatorList(BaseEstimator):
                         temp_search.fit(X, y, groups=groups, sample_weight=sample_weight)
                     self._search_list.append(temp_search)
             except (ValueError, TypeError, FitFailedWarning) as e:
+                # This warning catches errors during the fit operation.
                 warning_msg = f"Warning: {e} for estimator {estimator} and param_grid {param_grid}"
                 warnings.warn(warning_msg, category=UserWarning)
             if not hasattr(temp_search, 'cv_results_'):
-                warning_msg = f"Warning: estimator {estimator} and param_grid {param_grid} failed"
+                # This warning catches a problem after fit has run with no exception, however if there is no cv_results_ this indicates a failed fit operation.
+                warning_msg = f"Warning: estimator {estimator} and param_grid {param_grid} failed has no attribute cv_results_."
                 warnings.warn(warning_msg, category=FitFailedWarning)
         # pdb.set_trace()
         self.best_ind_ = np.argmax([search.best_score_ for search in self._search_list])
@@ -449,7 +485,7 @@ class GridSearchCVList(BaseEstimator):
                  n_jobs=None, refit=True, cv=None, verbose=0, pre_dispatch='2*n_jobs',
                  error_score=np.nan, return_train_score=False, is_discrete=False):
         # 'discrete' if is_discrete else 'continuous'
-        self.estimator_list = get_complete_estimator_list(estimator_list, 'discrete' if is_discrete else 'continuous')
+        self.estimator_list = get_complete_estimator_list(estimator_list, is_discrete)
         if param_grid_list == 'auto':
             self.param_grid_list = auto_hyperparameters(estimator_list=self.estimator_list, is_discrete=is_discrete)
         elif (param_grid_list == None):
