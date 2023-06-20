@@ -125,7 +125,7 @@ def select_discrete_estimator(estimator_type, multi_task):
             raise ValueError(f"Unsupported estimator type: {estimator_type}")
 
 
-def select_estimator(estimator_type, is_discrete, multi_task):
+def select_estimator(estimator_type, is_discrete, multi_task=False):
     """
     Returns an estimator object for the specified estimator and target types.
 
@@ -188,7 +188,7 @@ def check_list_type(lst):
     return True
 
 
-def get_complete_estimator_list(estimator_list, is_discrete, multi_task):
+def get_complete_estimator_list(estimator_list, is_discrete, multi_task=False):
     '''
     Returns a list of sklearn objects from an input list of str's, and sklearn objects.
 
