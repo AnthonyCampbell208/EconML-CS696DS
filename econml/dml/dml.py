@@ -37,6 +37,7 @@ from .._shap import _shap_explain_model_cate
 from ..sklearn_extensions.model_selection import SearchEstimatorList
 import pdb
 
+
 class _FirstStageWrapper:
     def __init__(self, model, is_Y, featurizer, linear_first_stages, discrete_treatment):
         self._model = clone(model, safe=False)
@@ -471,7 +472,7 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
                  model_y, model_t, model_final,
                  param_list_y=None,
                  param_list_t=None,
-                 scaling=True,
+                 scaling=False,
                  featurizer=None,
                  treatment_featurizer=None,
                  fit_cate_intercept=True,
@@ -514,11 +515,11 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
     def _gen_model_y(self):  # New
         if self.model_y == 'auto':
             model_y = SearchEstimatorList(estimator_list=self.model_y, param_grid_list=self.param_list_y,
-                                          scaling=self.scaling, verbose=self.verbose, grid_folds=self.grid_folds, n_jobs=self.n_jobs, random_state=self.random_state)
+                                          scaling=self.scaling, verbose=self.verbose, cv=self.cv, n_jobs=self.n_jobs, random_state=self.random_state)
         else:
             model_y = clone(SearchEstimatorList(estimator_list=self.model_y, param_grid_list=self.param_list_y,
-                                                scaling=self.scaling, verbose=self.verbose, grid_folds=self.grid_folds, n_jobs=self.n_jobs, random_state=self.random_state), safe=False)
-            # model_y = clone(self.model_y, safe=False)
+                                                scaling=self.scaling, verbose=self.verbose, cv=self.cv, n_jobs=self.n_jobs, random_state=self.random_state), safe=False)
+        # model_y = clone(self.model_y, safe=False)
         return _FirstStageWrapper(model_y, True, self._gen_featurizer(),
                                   self.linear_first_stages, self.discrete_treatment)
 
@@ -526,14 +527,22 @@ class DML(LinearModelFinalCateEstimatorMixin, _BaseDML):
         # import pdb
         # pdb.set_trace()
         if self.model_t == 'auto':
-            model_t = SearchEstimatorList(estimator_list=self.model_t, param_grid_list=self.param_list_t,
-                                          scaling=self.scaling, verbose=self.verbose, grid_folds=self.grid_folds, is_discrete=self.discrete_treatment,
-                                          n_jobs=self.n_jobs, random_state=self.random_state)
+            if self.discrete_treatment:
+                model_t = SearchEstimatorList(estimator_list=self.model_t, param_grid_list=self.param_list_t,
+                                              scaling=self.scaling, verbose=self.verbose, cv=WeightedStratifiedKFold(random_state=self.random_state), is_discrete=self.discrete_treatment,
+                                              n_jobs=self.n_jobs, random_state=self.random_state)
+            else:
+                model_t = SearchEstimatorList(estimator_list=self.model_t, param_grid_list=self.param_list_t,
+                                              scaling=self.scaling, verbose=self.verbose, cv=self.cv, is_discrete=self.discrete_treatment,
+                                              n_jobs=self.n_jobs, random_state=self.random_state)
             # model_t = LogisticRegressionCV(cv=WeightedStratifiedKFold(random_state=self.random_state),
             # model_t = WeightedLassoCVWrapper(random_state=self.random_state)
         else:
             model_t = clone(SearchEstimatorList(estimator_list=self.model_t, param_grid_list=self.param_list_t,
-                                                scaling=self.scaling, verbose=self.verbose, grid_folds=self.grid_folds, is_discrete=self.discrete_treatment, n_jobs=self.n_jobs, random_state=self.random_state), safe=False)
+                                                scaling=self.scaling, verbose=self.verbose, cv=self.cv, is_discrete=self.discrete_treatment,
+                                                n_jobs=self.n_jobs, random_state=self.random_state), safe=False)
+        # model_t = clone(self.model_t, safe=False)
+
         return _FirstStageWrapper(model_t, False, self._gen_featurizer(),
                                   self.linear_first_stages, self.discrete_treatment)
 

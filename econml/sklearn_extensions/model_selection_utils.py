@@ -1,7 +1,7 @@
 
 import pdb
 import warnings
-
+from sklearn.exceptions import NotFittedError
 import numpy as np
 import sklearn
 import sklearn.ensemble
@@ -26,19 +26,18 @@ from sklearn.svm import SVC, LinearSVC
 import inspect
 from sklearn.exceptions import NotFittedError
 from sklearn.multioutput import MultiOutputRegressor, MultiOutputClassifier
+from sklearn.model_selection import KFold
+# from sklearn_extensions.model_selection import WeightedStratifiedKFold
 
 
-model_list = ['linear', 'forest', 'gbf', 'nnet', 'poly', 'automl']
-
-
-def select_continuous_estimator(estimator_type, multi_task):
+def select_continuous_estimator(estimator_type, random_state):
     """
     Returns a continuous estimator object for the specified estimator type.
 
     Parameters
     ----------
         estimator_type (str): The type of estimator to use, one of: 'linear', 'forest', 'gbf', 'nnet', 'poly'.
-
+        TODO Add Random State for parameter
     Returns
     ----------
         object: An instance of the selected estimator class.
@@ -46,46 +45,30 @@ def select_continuous_estimator(estimator_type, multi_task):
     Raises:
         ValueError: If the estimator type is unsupported.
     """
-    if multi_task:
-        if estimator_type == 'linear':
-            return (MultiTaskElasticNetCV())
-        elif estimator_type == 'forest':
-            return RandomForestRegressor()
-        elif estimator_type == 'gbf':
-            return MultiOutputRegressor(GradientBoostingRegressor)()
-        elif estimator_type == 'nnet':
-            return (MLPRegressor())
-        elif estimator_type == 'poly':
-            poly = PolynomialFeatures()
-            linear = MultiTaskElasticNetCV(cv=3)  # Play around with precompute and tolerance
-            return (Pipeline([('poly', poly), ('linear', linear)]))
-        else:
-            raise ValueError(f"Unsupported estimator type: {estimator_type}")
+    if estimator_type == 'linear':
+        return (ElasticNetCV(random_state=random_state))
+    elif estimator_type == 'forest':
+        return RandomForestRegressor(random_state=random_state)
+    elif estimator_type == 'gbf':
+        return GradientBoostingRegressor(random_state=random_state)
+    elif estimator_type == 'nnet':
+        return (MLPRegressor(random_state=random_state))
+    elif estimator_type == 'poly':
+        poly = PolynomialFeatures()
+        linear = ElasticNetCV(random_state=random_state)  # Play around with precompute and tolerance
+        return (Pipeline([('poly', poly), ('linear', linear)]))
     else:
-        if estimator_type == 'linear':
-            return (ElasticNetCV())
-        elif estimator_type == 'forest':
-            return RandomForestRegressor()
-        elif estimator_type == 'gbf':
-            return GradientBoostingRegressor()
-        elif estimator_type == 'nnet':
-            return (MLPRegressor())
-        elif estimator_type == 'poly':
-            poly = PolynomialFeatures()
-            linear = ElasticNetCV(cv=3)  # Play around with precompute and tolerance
-            return (Pipeline([('poly', poly), ('linear', linear)]))
-        else:
-            raise ValueError(f"Unsupported estimator type: {estimator_type}")
+        raise ValueError(f"Unsupported estimator type: {estimator_type}")
 
 
-def select_discrete_estimator(estimator_type, multi_task):
+def select_discrete_estimator(estimator_type, random_state):
     """
     Returns a discrete estimator object for the specified estimator type.
 
     Parameters
     ----------
         estimator_type (str): The type of estimator to use, one of: 'linear', 'forest', 'gbf', 'nnet', 'poly'.
-
+        TODO Add Random State for parameter
     Returns
     ----------
         object: An instance of the selected estimator class.
@@ -93,39 +76,26 @@ def select_discrete_estimator(estimator_type, multi_task):
     Raises:
         ValueError: If the estimator type is unsupported.
     """
-    if multi_task:
-        if estimator_type == 'linear':
-            return MultiOutputClassifier((LogisticRegressionCV(multi_class='auto')))
-        elif estimator_type == 'forest':
-            return RandomForestClassifier()
-        elif estimator_type == 'gbf':
-            return MultiOutputClassifier(GradientBoostingClassifier())
-        elif estimator_type == 'nnet':
-            return MultiOutputClassifier(MLPClassifier())
-        elif estimator_type == 'poly':
-            poly = PolynomialFeatures()
-            linear = MultiOutputClassifier(LogisticRegressionCV(multi_class='auto'))
-            return (Pipeline([('poly', poly), ('linear', linear)]))
-        else:
-            raise ValueError(f"Unsupported estimator type: {estimator_type}")
+
+    if estimator_type == 'linear':
+        return (LogisticRegressionCV(cv=KFold(random_state=random_state),
+                                     multi_class='auto', random_state=random_state))
+    elif estimator_type == 'forest':
+        return RandomForestClassifier(random_state=random_state)
+    elif estimator_type == 'gbf':
+        return GradientBoostingClassifier(random_state=random_state)
+    elif estimator_type == 'nnet':
+        return (MLPClassifier(random_state=random_state))
+    elif estimator_type == 'poly':
+        poly = PolynomialFeatures()
+        linear = (LogisticRegressionCV(cv=KFold(random_state=random_state),
+                                       multi_class='auto', random_state=random_state))
+        return (Pipeline([('poly', poly), ('linear', linear)]))
     else:
-        if estimator_type == 'linear':
-            return (LogisticRegressionCV(multi_class='auto'))
-        elif estimator_type == 'forest':
-            return RandomForestClassifier()
-        elif estimator_type == 'gbf':
-            return GradientBoostingClassifier()
-        elif estimator_type == 'nnet':
-            return (MLPClassifier())
-        elif estimator_type == 'poly':
-            poly = PolynomialFeatures()
-            linear = LogisticRegressionCV(multi_class='auto')
-            return (Pipeline([('poly', poly), ('linear', linear)]))
-        else:
-            raise ValueError(f"Unsupported estimator type: {estimator_type}")
+        raise ValueError(f"Unsupported estimator type: {estimator_type}")
 
 
-def select_estimator(estimator_type, is_discrete, multi_task=False):
+def select_estimator(estimator_type, is_discrete, random_state):
     """
     Returns an estimator object for the specified estimator and target types.
 
@@ -133,7 +103,7 @@ def select_estimator(estimator_type, is_discrete, multi_task=False):
     ----------
         estimator_type (str): The type of estimator to use, one of: 'linear', 'forest', 'gbf', 'nnet', 'poly', 'automl', 'all'.
         is_discrete (bool): The type of target variable, if true then it's discrete.
-
+        TODO Add Random State for parameter
     Returns
     ----------
         object: An instance of the selected estimator class.
@@ -142,11 +112,11 @@ def select_estimator(estimator_type, is_discrete, multi_task=False):
         ValueError: If the estimator or target types are unsupported.
     """
     if not isinstance(is_discrete, bool):
-        raise ValueError(f"Unsupported target type: {is_discrete}")
+        raise ValueError(f"Unsupported target type: {type(is_discrete)}. is_discrete should be of type bool.")
     elif is_discrete:
-        return select_discrete_estimator(estimator_type=estimator_type, multi_task=multi_task)
+        return select_discrete_estimator(estimator_type=estimator_type, random_state=random_state)
     else:
-        return select_continuous_estimator(estimator_type=estimator_type, multi_task=multi_task)
+        return select_continuous_estimator(estimator_type=estimator_type, random_state=random_state)
 
 
 def is_likely_estimator(estimator):
@@ -182,13 +152,13 @@ def check_list_type(lst):
     for element in lst:
         if (not isinstance(element, (str, BaseCrossValidator))):
             if not is_likely_estimator(element):
-                pdb.set_trace()
+                # pdb.set_trace()
                 raise TypeError(
                     f"The list must contain only strings, sklearn model objects, and sklearn model selection objects. Invalid element: {element}")
     return True
 
 
-def get_complete_estimator_list(estimator_list, is_discrete, multi_task=False):
+def get_complete_estimator_list(estimator_list, is_discrete, random_state):
     '''
     Returns a list of sklearn objects from an input list of str's, and sklearn objects.
 
@@ -242,7 +212,8 @@ def get_complete_estimator_list(estimator_list, is_discrete, multi_task=False):
         if isinstance(estimator, BaseCrossValidator) or is_likely_estimator(estimator):
             temp_est_list.append(estimator)
         else:
-            temp_est_list.append(select_estimator(estimator, is_discrete, multi_task))
+            temp_est_list.append(select_estimator(estimator_type=estimator,
+                                 is_discrete=is_discrete, random_state=random_state))
     temp_est_list = flatten_list(temp_est_list)
 
     # Check that all types of models are matched towards the problem.
@@ -428,6 +399,10 @@ def just_one_model_no_params(estimator_list, param_list):
     return (len(estimator_list) == 1) and (len(param_list) == 1) and (len(param_list[0]) == 0)
 
 
+def param_grid_is_empty(param_grid):
+    return len(param_grid) == 0
+
+
 def is_linear_model(estimator):
     """
     Check whether an estimator is a polynomial regression, logistic regression, linear SVM, or any other type of
@@ -520,10 +495,69 @@ def is_polynomial_pipeline(estimator):
     return True
 
 
-def is_multi_task(y):
-    if len(y.shape) == 1:
-        return True
-    elif len(y.shape) == 2 and y.shape[1] > 1:
-        return False
+def is_likely_multi_task(y):
+    if len(y.shape) == 2:
+        if y.shape[1] > 1:
+            return True
+    return False
+
+
+def can_handle_multitask(model, is_discrete=False):
+    X = np.random.rand(10, 3)
+    if is_discrete:
+        y = np.random.randint(0, 2, (10, 2))
     else:
-        raise ValueError("Invalid target shape.")
+        y = np.random.rand(10, 2)
+
+    try:
+        model.fit(X, y)
+    except Exception as e:
+        return False
+
+    try:
+        model.predict(X)
+    except Exception as e:
+        # warnings.warn(f"The model {model.__class__.__name__} is not properly fitted. Error: {e}")
+        return False
+    return True
+
+
+def pipeline_convert_to_multitask(pipeline):
+    steps = list(pipeline.steps)
+
+    if isinstance(steps[-1][1], (LogisticRegressionCV)):
+        steps[-1] = ('linear', MultiOutputClassifier(steps[-1][1]))
+    if isinstance(steps[-1][1], (ElasticNetCV)):
+        steps[-1] = ('linear', MultiTaskElasticNetCV())
+    new_pipeline = Pipeline(steps)
+
+    return new_pipeline
+
+
+def make_model_multi_task(model, is_discrete):
+    try:
+        if is_discrete:
+            if is_polynomial_pipeline(model):
+                return pipeline_convert_to_multitask(model)
+            return MultiOutputClassifier(model)
+        else:
+            if isinstance(model, ElasticNetCV):
+                return MultiTaskElasticNetCV()
+            elif is_polynomial_pipeline(model):
+                return pipeline_convert_to_multitask(model)
+            else:
+                return MultiOutputRegressor(model)
+    except TypeError as e:
+        raise ValueError(f"An error occurred due to type mismatch: {e}") from e
+    except AttributeError as e:
+        raise ValueError(f"An error occurred due to attribute error: {e}") from e
+    except Exception as e:
+        raise ValueError("An unknown error occurred when making model multitask.") from e
+
+
+def make_param_multi_task(estimator, param_grid):
+    if isinstance(estimator, ElasticNetCV):
+        return param_grid
+    else:
+        param_grid_multi = {f'estimator__{k}': v for k, v in param_grid.items()}
+        return param_grid_multi

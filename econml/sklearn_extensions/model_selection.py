@@ -316,13 +316,13 @@ class SearchEstimatorList(BaseEstimator):
         List of categorical indices 
     """
 
-    def __init__(self, estimator_list=['linear', 'forest'], param_grid_list=None, scaling=True, is_discrete=False, scoring=None,
-                 n_jobs=None, refit=True, grid_folds=2, verbose=2, pre_dispatch='2*n_jobs', random_state=None,
+    def __init__(self, estimator_list=['linear', 'forest'], param_grid_list=None, scaling=False, is_discrete=False, scoring=None,
+                 n_jobs=None, refit=True, cv=2, verbose=2, pre_dispatch='2*n_jobs', random_state=None,
                  error_score=np.nan, return_train_score=False, categorical_indices=None):
         # pdb.set_trace()
         self.estimator_list = estimator_list
         self.complete_estimator_list = get_complete_estimator_list(
-            clone(estimator_list, safe=False), is_discrete=is_discrete)
+            clone(estimator_list, safe=False), is_discrete=is_discrete, random_state=random_state)
 
         # TODO Add in more functionality by checking if it's an empty list. If it's just 1 dictionary then we're going to need to turn it into a list
         # Just do more cases
@@ -344,7 +344,7 @@ class SearchEstimatorList(BaseEstimator):
         self.scaling = scaling
         self.n_jobs = n_jobs
         self.refit = refit
-        self.grid_folds = grid_folds
+        self.cv = cv
         self.verbose = verbose
         self.random_state = random_state
         self.pre_dispatch = pre_dispatch
@@ -354,12 +354,20 @@ class SearchEstimatorList(BaseEstimator):
 
     def fit(self, X, y, *, sample_weight=None, groups=None):
         # print(groups)
-        if groups != None:
-            pdb.set_trace()
-
-        if is_multi_task(y):
-            None
+        # if groups != None:
+        #     pdb.set_trace()
+        
         self._search_list = []
+        # pdb.set_trace()
+        # Change estimators if multi_task
+        if is_likely_multi_task(y):
+            for index, estimator in enumerate(self.complete_estimator_list):
+                if not can_handle_multitask(model=estimator, is_discrete=self.is_discrete):
+                    self.complete_estimator_list[index] = make_model_multi_task(
+                        model=estimator, is_discrete=self.is_discrete)
+                    if self.param_grid_list != None:
+                        self.param_grid_list[index] = make_param_multi_task(
+                            estimator=estimator, param_grid=self.param_grid_list[index])
 
         if self.scaling:
             if not is_data_scaled(X):
@@ -367,11 +375,18 @@ class SearchEstimatorList(BaseEstimator):
                 scaled_X = self.scaler.fit_transform(X)
 
         if just_one_model_no_params(estimator_list=self.complete_estimator_list, param_list=self.param_grid_list):
+            # Just fit the model and return it, no need for Grid search or for loop
             estimator = self.complete_estimator_list[0]
+            if self.random_state != None:
+                if has_random_state(model=estimator):
+                    # For a polynomial pipeline, you have to set the random state of the linear part, the polynomial part doesn't have random state
+                    if is_polynomial_pipeline(estimator):
+                        estimator = estimator.set_params(linear__random_state=self.random_state)
+                    else:
+                        estimator.set_params(random_state=self.random_state)
             if is_polynomial_pipeline(estimator=estimator):
+                # Only linear part of pipeline can handle sampleweight
                 estimator.fit(X, y, linear__sample_weight=sample_weight)
-            elif is_mlp(estimator=estimator):
-                estimator.fit(X, y)
             elif not supports_sample_weight(estimator=estimator):
                 estimator.fit(X, y)
             else:
@@ -390,11 +405,11 @@ class SearchEstimatorList(BaseEstimator):
                             estimator = estimator.set_params(linear__random_state=self.random_state)
                         else:
                             estimator.set_params(random_state=self.random_state)
-                print(estimator)
-                print(param_grid)
-                # pdb.set_trace()
+                print(estimator)  # Note Delete this
+                print(param_grid)  # Note Delete this
+                # pdb.set_trace() # Note Delete this
                 temp_search = GridSearchCV(estimator, param_grid, scoring=self.scoring,
-                                           n_jobs=self.n_jobs, refit=self.refit, cv=self.grid_folds, verbose=self.verbose,
+                                           n_jobs=self.n_jobs, refit=self.refit, cv=self.cv, verbose=self.verbose,
                                            pre_dispatch=self.pre_dispatch, error_score=self.error_score,
                                            return_train_score=self.return_train_score)
                 if self.scaling:
@@ -410,8 +425,6 @@ class SearchEstimatorList(BaseEstimator):
                 else:
                     if is_polynomial_pipeline(estimator=estimator):
                         temp_search.fit(X, y, groups=groups, linear__sample_weight=sample_weight)
-                    elif is_mlp(estimator=estimator):
-                        temp_search.fit(X, y, groups=groups)
                     elif not supports_sample_weight(estimator=estimator):
                         temp_search.fit(X, y, groups=groups)
                     else:
@@ -421,11 +434,11 @@ class SearchEstimatorList(BaseEstimator):
                 # This warning catches errors during the fit operation.
                 warning_msg = f"Warning: {e} for estimator {estimator} and param_grid {param_grid}"
                 warnings.warn(warning_msg, category=UserWarning)
-            if not hasattr(temp_search, 'cv_results_'):
+            if not hasattr(temp_search, 'cv_results_') and not param_grid_is_empty(param_grid=param_grid):
                 # This warning catches a problem after fit has run with no exception, however if there is no cv_results_ this indicates a failed fit operation.
                 warning_msg = f"Warning: estimator {estimator} and param_grid {param_grid} failed has no attribute cv_results_."
                 warnings.warn(warning_msg, category=FitFailedWarning)
-        # pdb.set_trace()
+
         self.best_ind_ = np.argmax([search.best_score_ for search in self._search_list])
         self.best_estimator_ = self._search_list[self.best_ind_].best_estimator_
         self.best_score_ = self._search_list[self.best_ind_].best_score_
@@ -485,7 +498,7 @@ class GridSearchCVList(BaseEstimator):
                  n_jobs=None, refit=True, cv=None, verbose=0, pre_dispatch='2*n_jobs',
                  error_score=np.nan, return_train_score=False, is_discrete=False):
         # 'discrete' if is_discrete else 'continuous'
-        self.estimator_list = get_complete_estimator_list(estimator_list, is_discrete)
+        self.estimator_list = get_complete_estimator_list(estimator_list, is_discrete, )
         if param_grid_list == 'auto':
             self.param_grid_list = auto_hyperparameters(estimator_list=self.estimator_list, is_discrete=is_discrete)
         elif (param_grid_list == None):
@@ -494,7 +507,7 @@ class GridSearchCVList(BaseEstimator):
             self.param_grid_list = param_grid_list
         self.scoring = scoring
         self.n_jobs = n_jobs
-        self.refit = refit
+        # self.refit = refit
         self.cv = cv
         self.verbose = verbose
         self.pre_dispatch = pre_dispatch
@@ -504,7 +517,7 @@ class GridSearchCVList(BaseEstimator):
 
     def fit(self, X, y=None, **fit_params):
         self._gcv_list = [GridSearchCV(estimator, param_grid, scoring=self.scoring,
-                                       n_jobs=self.n_jobs, refit=self.refit, cv=self.cv, verbose=self.verbose,
+                                       n_jobs=self.n_jobs, cv=self.cv, verbose=self.verbose,
                                        pre_dispatch=self.pre_dispatch, error_score=self.error_score,
                                        return_train_score=self.return_train_score)
                           for estimator, param_grid in zip(self.estimator_list, self.param_grid_list)]
